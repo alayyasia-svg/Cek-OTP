@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live OTP Console</title>
+    <!-- Menggunakan Google Fonts untuk rupa yang lebih cantik -->
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.6);
+            --primary: #38bdf8;
+            --success: #10b981;
+            --whatsapp: #25D366;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top right, #1e293b, var(--bg-color));
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .status-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+            border-color: rgba(56, 189, 248, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed var(--border);
+            padding-bottom: 8px;
+        }
+
+        .service-badge {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .service-badge.whatsapp { color: var(--whatsapp); background: rgba(37, 211, 102, 0.15); }
+        .service-badge.mykeeper { color: #f59e0b; background: rgba(245, 158, 11, 0.15); }
+
+        .time {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .phone-number {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .message {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #cbd5e1;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .otp-highlight {
+            background: var(--success);
+            color: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            font-size: 1.1em;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+        }
+
+        #error-msg {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">
+            <h1>📡 Live OTP Console</h1>
+            <div style="color: var(--text-muted); font-size: 0.85rem; margin-top: 4px;">Intercepting messages in real-time...</div>
+        </div>
+        <div class="status-container">
+            <span id="record-count">Records: 0</span>
+            <div class="live-indicator">
+                <div class="pulse"></div>
+                Auto-Refresh (5s)
+            </div>
+        </div>
+    </header>
+
+    <div id="error-msg">Gagal menyambung ke API. Sila semak sambungan CORS atau Rangkaian.</div>
+
+    <main class="grid-container" id="otp-grid">
+        <!-- Kad OTP akan dijana di sini oleh JavaScript -->
+    </main>
+
+    <script>
+        // API URL Anda
+        const API_URL = "http://38.253.224.75:4548/otp?count=200";
+        const gridContainer = document.getElementById('otp-grid');
+        const recordCountText = document.getElementById('record-count');
+        const errorMsg = document.getElementById('error-msg');
+
+        // Fungsi untuk menapis dan 'highlight' kod OTP dari mesej
+        function formatMessage(message) {
+            let cleanMsg = message.replace(/<#>\s*/g, '');
+            const otpRegex = /\b(\d{3}-\d{3}|\d{6})\b/g;
+            return cleanMsg.replace(otpRegex, '<span class="otp-highlight">$1</span>');
+        }
+
+        // --- NEW UPGRADE START ---
+        // Penambahan konfigurasi proxy untuk mengatasi isu "Mixed Content (HTTPS ke HTTP)"
+        // dan masalah CORS apabila script di-deploy.
+        const PROXY_URL = "https://api.allorigins.win/raw?url=";
+        const SECURE_API_URL = PROXY_URL + encodeURIComponent(API_URL);
+
+        /* --- FUNGSI ASAL DISIMPAN (TIDAK DIPADAM) ---
+        async function fetchOTPData() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error('Rangkaian tidak stabil');
+                
+                const json = await response.json();
+                
+                if (json.status === "Success" && json.data) {
+                    renderCards(json.data);
+                    recordCountText.innerText = `Records: ${json.records || json.data.length}`;
+                    errorMsg.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Fetch Error:", error);
+                errorMsg.style.display = 'block';
+                errorMsg.innerText = `Ralat API: Gagal menyambung ke ${API_URL}. Sila pastikan pelayan berjalan atau semak ralat CORS.`;
+            }
+        }
+        ------------------------------------------- */
+
+        // --- FUNGSI DINAIK TARAF (BYPASS CORS & HTTPS ISSUES) ---
+        async function fetchOTPData() {
+            try {
+                // Semak jika web sedang running di HTTPS, jika ya kita paksa guna Proxy
+                const isHTTPS = window.location.protocol === 'https:';
+                const targetURL = isHTTPS ? SECURE_API_URL : API_URL;
+
+                const response = await fetch(targetURL);
+                if (!response.ok) throw new Error('Rangkaian HTTP/HTTPS gagal');
+                
+                const json = await response.json();
+                
+                if (json.status === "Success" && json.data) {
+                    renderCards(json.data);
+                    recordCountText.innerText = `Records: ${json.records || json.data.length}`;
+                    errorMsg.style.display = 'none';
+                }
+            } catch (error) {
+                console.error("Fetch Error (Initial):", error);
+                
+                // FALLBACK: Jika URL asal gagal, cuba guna Proxy secara automatik
+                try {
+                    const proxyResponse = await fetch(SECURE_API_URL);
+                    if (!proxyResponse.ok) throw new Error('Proxy Fallback gagal');
+                    
+                    const proxyJson = await proxyResponse.json();
+                    
+                    if (proxyJson.status === "Success" && proxyJson.data) {
+                        renderCards(proxyJson.data);
+                        recordCountText.innerText = `Records: ${proxyJson.records || proxyJson.data.length}`;
+                        errorMsg.style.display = 'none';
+                    }
+                } catch (fallbackError) {
+                    console.error("Fetch Error (Fallback):", fallbackError);
+                    errorMsg.style.display = 'block';
+                    errorMsg.innerHTML = `Ralat API: Isu <b>Mixed Content</b> atau <b>CORS</b> menghalang sambungan ke pelayan.<br><br><small style="color: #cbd5e1;">(Sistem gagal menyambung terus ke ${API_URL} dan Proxy Bypass juga ditolak)</small>`;
+                }
+            }
+        }
+        // --- NEW UPGRADE END ---
+
+        // Fungsi untuk lukis kad di skrin
+        function renderCards(data) {
+            gridContainer.innerHTML = ''; 
+
+            data.forEach(record => {
+                if (record.length < 4) return; 
+                
+                const service = record[0];
+                const phone = record[1];
+                const rawMessage = record[2];
+                const time = record[3];
+
+                const badgeClass = service.toLowerCase() === 'whatsapp' ? 'whatsapp' 
+                                 : service.toLowerCase() === 'mykeeper' ? 'mykeeper' 
+                                 : '';
+
+                const formattedMsg = formatMessage(rawMessage);
+
+                const cardHTML = `
+                    <div class="card">
+                        <div class="card-header">
+                            <span class="service-badge ${badgeClass}">${service}</span>
+                            <span class="time">${time}</span>
+                        </div>
+                        <div class="phone-number">
+                            📱 +${phone}
+                        </div>
+                        <div class="message">${formattedMsg}</div>
+                    </div>
+                `;
+                
+                gridContainer.insertAdjacentHTML('beforeend', cardHTML);
+            });
+        }
+
+        // Jalankan fetch kali pertama apabila web dibuka
+        fetchOTPData();
+
+        // Tetapkan auto-refresh setiap 5 saat (5000 milliseconds)
+        setInterval(fetchOTPData, 5000);
+
+    </script>
+</body>
+</html>
